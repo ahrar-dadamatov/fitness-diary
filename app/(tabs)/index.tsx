@@ -1335,6 +1335,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#334155',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   counterBtnText: {
     color: '#F8FAFC',
@@ -1343,6 +1344,8 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+    minWidth: 0,
+    width: 0,
     color: '#F8FAFC',
     fontSize: 16,
     fontWeight: '700',
