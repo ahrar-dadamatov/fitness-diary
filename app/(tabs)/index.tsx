@@ -19,11 +19,13 @@ import {
   View,
 } from 'react-native';
 
-import { Audio } from 'expo-av';
+// import { Audio } from 'expo-av'; // Deprecated in Expo SDK 54
 import * as Notifications from 'expo-notifications';
 import Svg, { Circle } from 'react-native-svg';
 import { Exercise, useWorkoutStore, WorkoutDay, WorkoutLog } from '../../store';
 import { supabase } from '../../supabase';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 
 // Настройка отображения уведомлений в фореграунде (когда приложение открыто)
 Notifications.setNotificationHandler({
@@ -129,15 +131,11 @@ export default function HomeScreen() {
   // Звуковое оповещение при окончании таймера
   const playTimerEndSound = async () => {
     try {
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-        shouldDuckAndroid: true,
-      });
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav' }
-      );
-      await sound.playAsync();
+      // expo-av is removed in SDK 54, migration to expo-audio is required
+      // await Audio.setAudioModeAsync({ ... });
+      // const { sound } = await Audio.Sound.createAsync(...);
+      // await sound.playAsync();
+      console.log('Timer ended beep (sound disabled)');
     } catch (e) {
       console.warn('Не удалось воспроизвести звук:', e);
     }
@@ -233,6 +231,44 @@ export default function HomeScreen() {
         },
       },
     ]);
+  };
+
+  const handleExportData = async () => {
+    try {
+      const storeState = useWorkoutStore.getState();
+      const enrichedHistory = storeState.history.map(log => {
+        const exercise = storeState.exercises.find(e => e.id === log.exerciseId);
+        return {
+          ...log,
+          exerciseName: exercise ? exercise.name : 'Неизвестное упражнение',
+          exerciseCategory: exercise ? exercise.category : 'Неизвестно',
+          dateFormatted: new Date(log.date).toLocaleString('ru-RU')
+        };
+      });
+
+      const exportData = {
+        history: enrichedHistory,
+        measurements: storeState.measurements,
+        foodLogs: storeState.foodLogs,
+        exercises: storeState.exercises,
+        trainingDays: storeState.trainingDays,
+      };
+      
+      const jsonString = JSON.stringify(exportData, null, 2);
+      const fileUri = FileSystem.documentDirectory + 'fitness_diary_export.json';
+      
+      await FileSystem.writeAsStringAsync(fileUri, jsonString, { encoding: FileSystem.EncodingType.UTF8 });
+      
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(fileUri);
+      } else {
+        Alert.alert('Ошибка', 'Функция "Поделиться" недоступна на вашем устройстве');
+      }
+    } catch (error) {
+      Alert.alert('Ошибка экспорта', 'Не удалось экспортировать данные.');
+      console.error(error);
+    }
   };
 
   const handleOpenAddDayModal = () => {
@@ -357,9 +393,14 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
             <Text style={[styles.title, { flex: 1 }]}>Фитнес Дневник</Text>
-            <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn} activeOpacity={0.7}>
-              <Text style={styles.logoutBtnText}>Выйти 🚪</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity onPress={handleExportData} style={[styles.logoutBtn, { backgroundColor: '#38BDF8' }]} activeOpacity={0.7}>
+                <Text style={styles.logoutBtnText}>Экспорт 📤</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn} activeOpacity={0.7}>
+                <Text style={styles.logoutBtnText}>Выйти 🚪</Text>
+              </TouchableOpacity>
+            </View>
           </View>
           <Text style={styles.subtitle}>Прогрессируй с каждой тренировкой</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, flexWrap: 'wrap', gap: 8 }}>
