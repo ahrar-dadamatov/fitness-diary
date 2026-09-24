@@ -8,7 +8,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "fitnessdiary",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "buildNumber": "57"
