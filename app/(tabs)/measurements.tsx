@@ -61,11 +61,13 @@ export default function MeasurementsScreen() {
   // Предзаполнение полей при открытии формы прошлыми значениями
   useEffect(() => {
     if (latest) {
-      setWeightStr(latest.weight?.toString() || '');
-      setBicepsStr(latest.biceps?.toString() || '');
-      setChestStr(latest.chest?.toString() || '');
-      setWaistStr(latest.waist?.toString() || '');
-      setHipsStr(latest.hips?.toString() || '');
+      setTimeout(() => {
+        setWeightStr(latest.weight?.toString() || '');
+        setBicepsStr(latest.biceps?.toString() || '');
+        setChestStr(latest.chest?.toString() || '');
+        setWaistStr(latest.waist?.toString() || '');
+        setHipsStr(latest.hips?.toString() || '');
+      }, 0);
     }
   }, [latest, isFormOpen]);
 

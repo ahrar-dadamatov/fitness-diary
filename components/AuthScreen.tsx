@@ -71,7 +71,7 @@ export default function AuthScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.card}>
           <Image
-            source={require('../assets/images/logo.png')}
+            source={require('../assets/images/logo.jpg')}
             style={styles.logo}
             resizeMode="contain"
           />

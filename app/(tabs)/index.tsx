@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import {
   Alert,
   Animated,
@@ -129,17 +129,23 @@ export default function HomeScreen() {
   }, [timerActive, timerSeconds]);
 
   // Звуковое оповещение при окончании таймера
-  const playTimerEndSound = async () => {
+  async function playTimerEndSound() {
     try {
-      // expo-av is removed in SDK 54, migration to expo-audio is required
-      // await Audio.setAudioModeAsync({ ... });
-      // const { sound } = await Audio.Sound.createAsync(...);
-      // await sound.playAsync();
+      // Отправка уведомления в Telegram
+      const TELEGRAM_TOKEN = '8888360824:AAEY1J_5NBoU66-9QxQpqnl765JPerFnEVE';
+      const CHAT_ID = '518441690';
+      const text = encodeURIComponent('⏱ Время отдыха вышло! Пора делать следующий подход! 🏋️‍♂️');
+      
+      fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${text}`)
+        .then(res => res.json())
+        .then(data => console.log('Telegram sent:', data))
+        .catch(err => console.error('Telegram error:', err));
+        
       console.log('Timer ended beep (sound disabled)');
     } catch (e) {
-      console.warn('Не удалось воспроизвести звук:', e);
+      console.warn('Не удалось воспроизвести звук/отправить пуш:', e);
     }
-  };
+  }
 
   const prevTimerActive = useRef(timerActive);
   useEffect(() => {
@@ -171,7 +177,7 @@ export default function HomeScreen() {
       update();
       interval = setInterval(update, 1000);
     } else {
-      setSessionSeconds(0);
+      setTimeout(() => setSessionSeconds(0), 0);
     }
     return () => {
       if (interval) clearInterval(interval);
@@ -824,9 +830,9 @@ function ExerciseCard({ exercise, location, history, addLog, deleteLog, lastLog,
   const [repsStr, setRepsStr] = useState('');
   const [isLb, setIsLb] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
-  const translateX = useRef(new Animated.Value(0)).current;
+  const translateX = useMemo(() => new Animated.Value(0), []);
 
-  const panResponder = useRef(
+  const panResponder = useMemo(() => 
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
@@ -858,7 +864,7 @@ function ExerciseCard({ exercise, location, history, addLog, deleteLog, lastLog,
         }
       },
     })
-  ).current;
+  , []);
 
   const resetSwipe = () => {
     Animated.spring(translateX, {
@@ -871,11 +877,15 @@ function ExerciseCard({ exercise, location, history, addLog, deleteLog, lastLog,
 
   useEffect(() => {
     if (lastLog) {
-      setWeightStr(lastLog.weight.toString());
-      setRepsStr(lastLog.reps.toString());
+      setTimeout(() => {
+        setWeightStr(lastLog.weight.toString());
+        setRepsStr(lastLog.reps.toString());
+      }, 0);
     } else {
-      setWeightStr('20');
-      setRepsStr('10');
+      setTimeout(() => {
+        setWeightStr('20');
+        setRepsStr('10');
+      }, 0);
     }
   }, [exercise.id, lastLog]);
 
