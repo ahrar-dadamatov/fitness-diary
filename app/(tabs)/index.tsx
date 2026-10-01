@@ -21,6 +21,7 @@ import {
 
 // import { Audio } from 'expo-av'; // Deprecated in Expo SDK 54
 import * as Notifications from 'expo-notifications';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import Svg, { Circle } from 'react-native-svg';
 import { Exercise, useWorkoutStore, WorkoutDay, WorkoutLog } from '../../store';
 import { supabase } from '../../supabase';
@@ -155,6 +156,16 @@ export default function HomeScreen() {
     }
     prevTimerActive.current = timerActive;
   }, [timerActive, timerSeconds]);
+
+  // Не даем экрану гаснуть, пока идет таймер
+  useEffect(() => {
+    if (timerActive) {
+      activateKeepAwakeAsync();
+    } else {
+      deactivateKeepAwake();
+    }
+    return () => deactivateKeepAwake();
+  }, [timerActive]);
 
   const workoutActive = useWorkoutStore((state) => state.workoutActive);
   const workoutStartTime = useWorkoutStore((state) => state.workoutStartTime);
