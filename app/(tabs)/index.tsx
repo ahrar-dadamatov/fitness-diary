@@ -39,6 +39,28 @@ Notifications.setNotificationHandler({
   }),
 });
 
+async function exportJsonOnWeb(jsonString: string) {
+  const fileName = 'fitness_diary_export.json';
+  const file = new File([jsonString], fileName, { type: 'application/json' });
+
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file] });
+    } catch (error: any) {
+      // Пользователь просто закрыл меню «Поделиться»
+      if (error?.name !== 'AbortError') throw error;
+    }
+    return;
+  }
+
+  const url = URL.createObjectURL(file);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function HomeScreen() {
   const currentDay = useWorkoutStore((state) => state.currentDay);
   const setCurrentDay = useWorkoutStore((state) => state.setCurrentDay);
@@ -103,6 +125,8 @@ export default function HomeScreen() {
 
   useEffect(() => {
     async function requestPermissions() {
+      // На вебе expo-notifications не планирует уведомления
+      if (Platform.OS === 'web') return;
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
       if (existingStatus !== 'granted') {
@@ -159,12 +183,13 @@ export default function HomeScreen() {
 
   // Не даем экрану гаснуть, пока идет таймер
   useEffect(() => {
-    if (timerActive) {
-      activateKeepAwakeAsync();
-    } else {
-      deactivateKeepAwake();
-    }
-    return () => deactivateKeepAwake();
+    if (!timerActive) return;
+
+    // На вебе блокировка может быть недоступна или ещё не активирована: таймер работает и без неё
+    activateKeepAwakeAsync().catch((e) => console.warn('Keep awake недоступен:', e));
+    return () => {
+      deactivateKeepAwake().catch(() => {});
+    };
   }, [timerActive]);
 
   const workoutActive = useWorkoutStore((state) => state.workoutActive);
@@ -272,6 +297,12 @@ export default function HomeScreen() {
       };
       
       const jsonString = JSON.stringify(exportData, null, 2);
+
+      if (Platform.OS === 'web') {
+        await exportJsonOnWeb(jsonString);
+        return;
+      }
+
       const fileUri = FileSystem.documentDirectory + 'fitness_diary_export.json';
       
       await FileSystem.writeAsStringAsync(fileUri, jsonString, { encoding: FileSystem.EncodingType.UTF8 });
@@ -1649,7 +1680,7 @@ const styles = StyleSheet.create({
   },
   floatingTimerCard: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 110 : 95,
+    bottom: Platform.OS === 'android' ? 95 : 110,
     left: 16,
     right: 16,
     backgroundColor: '#1E293B',

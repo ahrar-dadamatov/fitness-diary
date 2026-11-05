@@ -28,7 +28,7 @@ export default function TabLayout() {
           tabBarButton: HapticTab,
           tabBarStyle: {
             position: 'absolute',
-            bottom: Platform.OS === 'ios' ? 30 : 20,
+            bottom: Platform.OS === 'android' ? 20 : 30,
             left: 20,
             right: 20,
             elevation: 5,
@@ -43,7 +43,8 @@ export default function TabLayout() {
             paddingBottom: Platform.OS === 'ios' ? 0 : 0,
           },
           tabBarItemStyle: {
-            paddingVertical: 10,
+            // На вебе отступ 10 обрезает подписи вкладок
+            paddingVertical: Platform.OS === 'web' ? 4 : 10,
           }
         }}>
         <Tabs.Screen

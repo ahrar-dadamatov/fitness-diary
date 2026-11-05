@@ -23,6 +23,7 @@ const MAPPING = {
   'chart.bar.fill': 'assessment',
   'history': 'history',
   'brain': 'psychology',
+  'list.bullet': 'format-list-bulleted',
 } as IconMapping;
 
 /**
