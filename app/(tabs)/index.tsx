@@ -27,6 +27,7 @@ import { Exercise, useWorkoutStore, WorkoutDay, WorkoutLog } from '../../store';
 import { supabase } from '../../supabase';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { enablePush, getPushState, removePushRegistration, scheduleRestPush } from '@/utils/web-push';
 
 // Настройка отображения уведомлений в фореграунде (когда приложение открыто)
@@ -243,6 +244,7 @@ export default function HomeScreen() {
   const [dayIcon, setDayIcon] = useState('💪');
 
   const [pushState, setPushState] = useState(getPushState);
+  const insets = useSafeAreaInsets();
 
   const handleEnablePush = async () => {
     if (pushState === 'denied') {
@@ -443,14 +445,14 @@ export default function HomeScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {/* Заголовок */}
         <View style={styles.header}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
-            <Text style={[styles.title, { flex: 1 }]}>Фитнес Дневник</Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <TouchableOpacity onPress={handleExportData} style={[styles.logoutBtn, { backgroundColor: '#38BDF8' }]} activeOpacity={0.7}>
-                <Text style={styles.logoutBtnText}>Экспорт 📤</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <Text style={[styles.title, { flex: 1, fontSize: 24 }]} numberOfLines={1}>Фитнес Дневник</Text>
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              <TouchableOpacity onPress={handleExportData} style={styles.enablePushBtnCompact} activeOpacity={0.7}>
+                <Text style={styles.enablePushBtnText}>Экспорт</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn} activeOpacity={0.7}>
-                <Text style={styles.logoutBtnText}>Выйти 🚪</Text>
+                <Text style={styles.logoutBtnText}>Выйти</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -578,7 +580,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
-        <View style={{ height: 40 }} />
+        <View style={{ height: 130 }} />
       </ScrollView>
 
       {/* Модальное окно создания/редактирования */}
@@ -816,20 +818,16 @@ export default function HomeScreen() {
       {/* Плавающий таймер отдыха */}
       {
         timerSeconds > 0 && (
-          <View style={styles.floatingTimerCard}>
+          <View style={[styles.floatingTimerCard, Platform.OS !== 'android' && { bottom: Math.max(insets.bottom, 16) + 77 }]}>
             <View style={styles.timerHeader}>
-              <Text style={styles.timerTitle}>⏱️ Отдых после подхода</Text>
-            </View>
-
-            <View style={{ alignItems: 'center', justifyContent: 'center', marginVertical: 15 }}>
-              <Svg width="140" height="140" viewBox="0 0 140 140">
-                <Circle cx="70" cy="70" r="60" stroke="#334155" strokeWidth="12" fill="none" />
+              <Svg width="56" height="56" viewBox="0 0 140 140">
+                <Circle cx="70" cy="70" r="60" stroke="#334155" strokeWidth="18" fill="none" />
                 <Circle
                   cx="70"
                   cy="70"
                   r="60"
-                  stroke="#0284C7"
-                  strokeWidth="12"
+                  stroke="#38BDF8"
+                  strokeWidth="18"
                   fill="none"
                   strokeDasharray={2 * Math.PI * 60}
                   strokeDashoffset={(2 * Math.PI * 60) * (1 - (timerSeconds / (timerMax || 90)))}
@@ -837,8 +835,9 @@ export default function HomeScreen() {
                   transform="rotate(-90 70 70)"
                 />
               </Svg>
-              <View style={{ position: 'absolute', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={[styles.timerCount, { fontSize: 36, marginBottom: 0 }]}>
+              <View>
+                <Text style={styles.timerTitle}>Отдых после подхода</Text>
+                <Text style={styles.timerCount}>
                   {Math.floor(timerSeconds / 60).toString().padStart(2, '0')}:
                   {(timerSeconds % 60).toString().padStart(2, '0')}
                 </Text>
@@ -1045,7 +1044,7 @@ function ExerciseCard({ exercise, location, history, addLog, deleteLog, lastLog,
                 🔥 {lastLog.weight} кг × {lastLog.reps}
               </Text>
               <Text style={styles.historyLocation}>
-                в зал {lastLog.location} ({new Date(lastLog.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })})
+                в зале {lastLog.location} ({new Date(lastLog.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })})
               </Text>
             </View>
           ) : (
@@ -1055,8 +1054,8 @@ function ExerciseCard({ exercise, location, history, addLog, deleteLog, lastLog,
 
         <View style={styles.inputRow}>
           <View style={styles.inputBlock}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <Text style={styles.inputLabel}>{isLb ? 'Вес (lb)' : 'Вес (кг)'}</Text>
+            <View style={styles.inputLabelRow}>
+              <Text style={[styles.inputLabel, { marginBottom: 0 }]}>{isLb ? 'Вес (lb)' : 'Вес (кг)'}</Text>
               <TouchableOpacity
                 onPress={() => {
                   const currentVal = parseFloat(weightStr) || 0;
@@ -1076,7 +1075,7 @@ function ExerciseCard({ exercise, location, history, addLog, deleteLog, lastLog,
                 style={styles.unitToggleBtn}
                 activeOpacity={0.7}
               >
-                <Text style={styles.unitToggleText}>{isLb ? '➡️ кг' : '➡️ lb'}</Text>
+                <Text style={styles.unitToggleText}>{isLb ? 'в кг' : 'в lb'}</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.counterRow}>
@@ -1097,7 +1096,9 @@ function ExerciseCard({ exercise, location, history, addLog, deleteLog, lastLog,
           </View>
 
           <View style={styles.inputBlock}>
-            <Text style={[styles.inputLabel, { marginBottom: 6 }]}>Повторы</Text>
+            <View style={styles.inputLabelRow}>
+              <Text style={[styles.inputLabel, { marginBottom: 0 }]}>Повторы</Text>
+            </View>
             <View style={styles.counterRow}>
               <TouchableOpacity style={styles.counterBtn} onPress={() => adjustReps(-1)}>
                 <Text style={styles.counterBtnText}>-1</Text>
@@ -1193,9 +1194,11 @@ const styles = StyleSheet.create({
   },
   daysSelectorScroll: {
     marginBottom: 20,
+    marginHorizontal: -16,
+    flexGrow: 0,
   },
   daysSelectorContent: {
-    paddingHorizontal: 4,
+    paddingHorizontal: 12,
     flexDirection: 'row',
   },
   dayButton: {
@@ -1369,11 +1372,20 @@ const styles = StyleSheet.create({
   },
   inputRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: 10,
     marginBottom: 12,
   },
   inputBlock: {
-    flex: 0.48,
+    flex: 1,
+    minWidth: 0,
+  },
+  // Одинаковая высота подписей, чтобы счётчики веса и повторов стояли на одной линии
+  inputLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    height: 24,
+    marginBottom: 6,
   },
   inputLabel: {
     fontSize: 12,
@@ -1383,7 +1395,8 @@ const styles = StyleSheet.create({
   },
   counterRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
+    height: 44,
     backgroundColor: '#0F172A',
     borderRadius: 10,
     borderWidth: 1,
@@ -1391,8 +1404,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   counterBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 8,
+    width: 40,
     backgroundColor: '#334155',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1411,14 +1423,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     textAlign: 'center',
-    paddingVertical: 8,
   },
   saveBtn: {
     backgroundColor: '#0284C7',
     borderRadius: 10,
-    paddingVertical: 12,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginBottom: 12,
   },
   saveBtnText: {
     color: '#FFFFFF',
@@ -1426,6 +1436,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   todaySetsContainer: {
+    marginTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#334155',
     paddingTop: 10,
@@ -1681,6 +1692,14 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     marginTop: 8,
   },
+  enablePushBtnCompact: {
+    backgroundColor: '#38BDF820',
+    borderWidth: 1,
+    borderColor: '#38BDF850',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
   enablePushBtnText: {
     color: '#38BDF8',
     fontSize: 12,
@@ -1709,7 +1728,7 @@ const styles = StyleSheet.create({
     right: 16,
     backgroundColor: '#1E293B',
     borderRadius: 16,
-    padding: 16,
+    padding: 12,
     borderWidth: 1,
     borderColor: '#38BDF8',
     shadowColor: '#000',
@@ -1720,17 +1739,17 @@ const styles = StyleSheet.create({
   },
   timerHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    gap: 12,
+    marginBottom: 12,
   },
   timerTitle: {
-    fontSize: 14,
-    color: '#F8FAFC',
-    fontWeight: '700',
+    fontSize: 13,
+    color: '#94A3B8',
+    fontWeight: '600',
   },
   timerCount: {
-    fontSize: 20,
+    fontSize: 28,
     color: '#38BDF8',
     fontWeight: '800',
   },
@@ -1753,7 +1772,7 @@ const styles = StyleSheet.create({
   timerActionBtn: {
     flex: 0.23,
     backgroundColor: '#334155',
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',

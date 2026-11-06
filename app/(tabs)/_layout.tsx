@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -13,6 +13,7 @@ import AuthScreen from '@/components/AuthScreen';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const session = useWorkoutStore((state) => state.session);
+  const insets = useSafeAreaInsets();
 
   if (!session) {
     return <AuthScreen />;
@@ -25,12 +26,13 @@ export default function TabLayout() {
           tabBarActiveTintColor: '#38BDF8',
           tabBarInactiveTintColor: '#64748B',
           headerShown: false,
+          sceneStyle: { backgroundColor: '#0F172A' },
           tabBarButton: HapticTab,
           tabBarStyle: {
             position: 'absolute',
-            bottom: Platform.OS === 'android' ? 20 : 30,
-            left: 20,
-            right: 20,
+            bottom: Platform.OS === 'android' ? 20 : Math.max(insets.bottom, 16),
+            left: 12,
+            right: 12,
             elevation: 5,
             backgroundColor: '#1E293B',
             borderRadius: 20,
@@ -42,7 +44,12 @@ export default function TabLayout() {
             shadowRadius: 10,
             paddingBottom: Platform.OS === 'ios' ? 0 : 0,
           },
+          // Иначе на iPhone подписи «Тренировка» и «Программы» обрезаются
+          tabBarLabelStyle: {
+            fontSize: 10,
+          },
           tabBarItemStyle: {
+            paddingHorizontal: 0,
             // На вебе отступ 10 обрезает подписи вкладок
             paddingVertical: Platform.OS === 'web' ? 4 : 10,
           }

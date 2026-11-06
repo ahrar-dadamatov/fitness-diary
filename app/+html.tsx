@@ -5,6 +5,10 @@ import type { PropsWithChildren } from 'react';
 
 const backgroundStyle = `
 html, body { background-color: #0F172A; overscroll-behavior: none; }
+/* В установленном приложении на iPhone height: 100% короче экрана, и снизу остаётся пустая полоса */
+@media (display-mode: standalone) {
+  html, body, #root { height: 100vh; }
+}
 `;
 
 const registerServiceWorker = `

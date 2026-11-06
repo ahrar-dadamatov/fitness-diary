@@ -7,7 +7,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  SafeAreaView
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -116,7 +115,7 @@ export default function ProgramsScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#0F172A' }}>
+    <View style={{ flex: 1, backgroundColor: '#0F172A' }}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Программы</Text>
@@ -181,9 +180,9 @@ export default function ProgramsScreen() {
           </View>
         ))}
         
-        <View style={{ height: 100 }} />
+        <View style={{ height: 120 }} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -193,21 +192,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F172A',
   },
   content: {
-    padding: 20,
+    padding: 16,
     paddingTop: 16,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '800',
     color: '#F8FAFC',
-    marginBottom: 4,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#94A3B8',
+    marginTop: 4,
   },
   programCard: {
     backgroundColor: '#1E293B',
@@ -219,7 +219,9 @@ const styles = StyleSheet.create({
   },
   programImage: {
     width: '100%',
-    height: 160,
+    height: 140,
+    // Видно, пока картинка грузится или если нет интернета
+    backgroundColor: '#0C4A6E',
   },
   programContent: {
     padding: 20,
