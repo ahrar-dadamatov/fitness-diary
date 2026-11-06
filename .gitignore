@@ -48,3 +48,6 @@ jdk.zip
 
 # Logs
 eas_log*.txt
+
+# Secrets for push setup
+*.local.sql

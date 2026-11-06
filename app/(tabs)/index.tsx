@@ -27,6 +27,7 @@ import { Exercise, useWorkoutStore, WorkoutDay, WorkoutLog } from '../../store';
 import { supabase } from '../../supabase';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import { enablePush, getPushState, removePushRegistration, scheduleRestPush } from '@/utils/web-push';
 
 // Настройка отображения уведомлений в фореграунде (когда приложение открыто)
 Notifications.setNotificationHandler({
@@ -262,13 +263,37 @@ export default function HomeScreen() {
   const [dayTitle, setDayTitle] = useState('');
   const [dayIcon, setDayIcon] = useState('💪');
 
+  const [pushState, setPushState] = useState(getPushState);
+
+  const handleEnablePush = async () => {
+    if (pushState === 'denied') {
+      Alert.alert('Уведомления отключены', 'Разрешите их в Настройках iPhone: Уведомления → Fitness Diary.');
+      return;
+    }
+    try {
+      const nextState = await enablePush();
+      setPushState(nextState);
+      if (nextState === 'enabled') {
+        if (timerActive && timerTargetTimestamp) scheduleRestPush(timerTargetTimestamp);
+        Alert.alert('Готово', 'Уведомление придёт, когда закончится отдых.');
+      }
+    } catch (e: any) {
+      Alert.alert('Не удалось включить уведомления', e?.message || 'Попробуйте ещё раз.');
+    }
+  };
+
   const handleLogout = () => {
     Alert.alert('Выход', 'Вы уверены, что хотите выйти из аккаунта?', [
       { text: 'Отмена', style: 'cancel' },
       {
         text: 'Выйти',
         style: 'destructive',
-        onPress: () => {
+        onPress: async () => {
+          try {
+            await removePushRegistration();
+          } catch (e) {
+            console.warn('Не удалось отключить уведомления:', e);
+          }
           supabase.auth.signOut();
         },
       },
@@ -451,6 +476,11 @@ export default function HomeScreen() {
             </View>
           </View>
           <Text style={styles.subtitle}>Прогрессируй с каждой тренировкой</Text>
+          {(pushState === 'available' || pushState === 'denied') && (
+            <TouchableOpacity onPress={handleEnablePush} style={styles.enablePushBtn} activeOpacity={0.7}>
+              <Text style={styles.enablePushBtnText}>🔔 Включить уведомления об отдыхе</Text>
+            </TouchableOpacity>
+          )}
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, flexWrap: 'wrap', gap: 8 }}>
             <View style={styles.tonnageBadge}>
               <Text style={styles.tonnageBadgeText}>🏋️‍♂️ Тоннаж сегодня: {todayTonnage} кг</Text>
@@ -1661,6 +1691,21 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
+  },
+  enablePushBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#38BDF820',
+    borderWidth: 1,
+    borderColor: '#38BDF850',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginTop: 8,
+  },
+  enablePushBtnText: {
+    color: '#38BDF8',
+    fontSize: 12,
+    fontWeight: '700',
   },
   logoutBtnText: {
     color: '#EF4444',

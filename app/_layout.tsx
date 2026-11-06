@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { supabase } from '@/supabase';
 import { useWorkoutStore } from '@/store';
+import { syncPushSubscription } from '@/utils/web-push';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -41,6 +42,13 @@ export default function RootLayout() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const userId = useWorkoutStore((state) => state.session?.user?.id);
+  useEffect(() => {
+    if (userId) {
+      syncPushSubscription().catch((e) => console.warn('Не удалось обновить подписку на уведомления:', e));
+    }
+  }, [userId]);
 
   if (!authReady) {
     return <View style={{ flex: 1, backgroundColor: '#0F172A' }} />;

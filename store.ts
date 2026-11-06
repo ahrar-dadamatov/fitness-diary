@@ -4,6 +4,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { supabase } from './supabase';
 import { Alert, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { scheduleRestPush } from '@/utils/web-push';
 
 // 1. Описываем упражнение
 export interface Exercise {
@@ -705,13 +706,15 @@ export const useWorkoutStore = create<WorkoutStore>()(
           console.warn('Не удалось запланировать уведомление:', e);
         }
 
+        const targetTimestamp = Date.now() + seconds * 1000;
         set({
           timerSeconds: seconds,
           timerActive: true,
           timerMax: seconds,
           timerNotificationId: newNotifId,
-          timerTargetTimestamp: Date.now() + seconds * 1000,
+          timerTargetTimestamp: targetTimestamp,
         });
+        scheduleRestPush(targetTimestamp);
       },
       stopTimer: async () => {
         const { timerNotificationId } = get();
@@ -723,6 +726,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
           }
         }
         set({ timerActive: false, timerNotificationId: null, timerTargetTimestamp: null });
+        scheduleRestPush(null);
       },
       adjustTimer: async (amount) => {
         const { timerSeconds, timerNotificationId, timerActive } = get();
@@ -758,13 +762,16 @@ export const useWorkoutStore = create<WorkoutStore>()(
           }
         }
 
+        const targetTimestamp = next > 0 ? Date.now() + next * 1000 : null;
         set((state) => ({
           timerSeconds: next,
           timerActive: next > 0 ? state.timerActive : false,
           timerMax: Math.max(state.timerMax, next),
           timerNotificationId: newNotifId,
-          timerTargetTimestamp: next > 0 ? Date.now() + next * 1000 : null,
+          timerTargetTimestamp: targetTimestamp,
         }));
+        // На паузе таймер не идёт, поэтому на сервере его быть не должно
+        if (timerActive) scheduleRestPush(targetTimestamp);
       },
       tickTimer: () => {
         const { timerSeconds } = get();
