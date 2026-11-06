@@ -109,7 +109,6 @@ export default function HomeScreen() {
             timerTargetTimestamp: null,
             timerNotificationId: null,
           });
-          playTimerEndSound();
         } else {
           useWorkoutStore.setState({
             timerSeconds: remaining,
@@ -154,30 +153,10 @@ export default function HomeScreen() {
     };
   }, [timerActive, timerSeconds]);
 
-  // Звуковое оповещение при окончании таймера
-  async function playTimerEndSound() {
-    try {
-      // Отправка уведомления в Telegram
-      const TELEGRAM_TOKEN = '8888360824:AAEY1J_5NBoU66-9QxQpqnl765JPerFnEVE';
-      const CHAT_ID = '518441690';
-      const text = encodeURIComponent('⏱ Время отдыха вышло! Пора делать следующий подход! 🏋️‍♂️');
-      
-      fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${text}`)
-        .then(res => res.json())
-        .then(data => console.log('Telegram sent:', data))
-        .catch(err => console.error('Telegram error:', err));
-        
-      console.log('Timer ended beep (sound disabled)');
-    } catch (e) {
-      console.warn('Не удалось воспроизвести звук/отправить пуш:', e);
-    }
-  }
-
   const prevTimerActive = useRef(timerActive);
   useEffect(() => {
     if (prevTimerActive.current && !timerActive && timerSeconds === 0) {
       Vibration.vibrate([0, 400, 150, 400]);
-      playTimerEndSound();
     }
     prevTimerActive.current = timerActive;
   }, [timerActive, timerSeconds]);
