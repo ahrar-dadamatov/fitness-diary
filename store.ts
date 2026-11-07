@@ -5,6 +5,7 @@ import { supabase } from './supabase';
 import { Alert, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { scheduleRestPush } from '@/utils/web-push';
+import { deleteExerciseMedia } from '@/utils/exercise-media';
 
 // 1. Описываем упражнение
 export interface Exercise {
@@ -302,6 +303,8 @@ interface WorkoutStore {
   addExercise: (name: string, category: string, day: number, instructions?: string[], imageUrl?: string) => Promise<void>;
   updateExercise: (id: string, name: string, category: string, day: number, instructions?: string[], imageUrl?: string) => Promise<void>;
   deleteExercise: (id: string) => Promise<void>;
+  // Фото или видео техники; undefined — убрать
+  setExerciseMedia: (id: string, mediaUrl?: string) => Promise<void>;
   addMeasurement: (weight: number, biceps?: number, chest?: number, waist?: number, hips?: number) => Promise<void>;
   deleteMeasurement: (id: string) => Promise<void>;
   syncData: () => Promise<void>;
@@ -507,6 +510,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
 
       // Удалить упражнение
       deleteExercise: async (id) => {
+        const removed = get().exercises.find((ex) => ex.id === id);
         set((state) => ({
           exercises: state.exercises.filter((ex) => ex.id !== id),
         }));
@@ -514,7 +518,25 @@ export const useWorkoutStore = create<WorkoutStore>()(
         const { user } = get();
         if (user) {
           await supabase.from('exercises').delete().eq('id', id);
+          await deleteExerciseMedia(removed?.imageUrl);
         }
+      },
+
+      setExerciseMedia: async (id, mediaUrl) => {
+        const previous = get().exercises.find((ex) => ex.id === id)?.imageUrl;
+        const { user } = get();
+        if (user) {
+          const { error } = await supabase.from('exercises').update({ image_url: mediaUrl ?? null }).eq('id', id);
+          if (error) {
+            // Новый файл уже загружен, но к упражнению не привязался
+            await deleteExerciseMedia(mediaUrl);
+            throw new Error(error.message);
+          }
+        }
+        set((state) => ({
+          exercises: state.exercises.map((ex) => (ex.id === id ? { ...ex, imageUrl: mediaUrl } : ex)),
+        }));
+        if (previous !== mediaUrl) await deleteExerciseMedia(previous);
       },
 
       // Добавить замер тела
@@ -855,6 +877,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
         for (const ex of exercisesToDelete) {
           if (user && ex.id.startsWith('custom_')) {
             await supabase.from('exercises').delete().eq('id', ex.id);
+            await deleteExerciseMedia(ex.imageUrl);
           }
         }
         set((state) => {

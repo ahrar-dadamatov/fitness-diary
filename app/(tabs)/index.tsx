@@ -28,6 +28,7 @@ import { supabase } from '../../supabase';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ExerciseMedia from '@/components/ExerciseMedia';
 import { enablePush, getPushState, removePushRegistration, scheduleRestPush } from '@/utils/web-push';
 
 // Настройка отображения уведомлений в фореграунде (когда приложение открыто)
@@ -407,7 +408,8 @@ export default function HomeScreen() {
       .map((line) => line.trim())
       .filter((line) => line.length > 0);
     if (editMode) {
-      updateExercise(selectedExId, exName, exCategory, currentDay, instructionsArray);
+      const current = exercises.find((ex) => ex.id === selectedExId);
+      updateExercise(selectedExId, exName, exCategory, currentDay, instructionsArray, current?.imageUrl);
     } else {
       addExercise(exName, exCategory, currentDay, instructionsArray);
     }
@@ -1017,6 +1019,7 @@ function ExerciseCard({ exercise, location, history, addLog, deleteLog, lastLog,
 
         {showInstructions && (
           <View style={styles.instructionsContainer}>
+            <ExerciseMedia exerciseId={exercise.id} value={exercise.imageUrl} />
             <Text style={styles.instructionsTitle}>Техника выполнения:</Text>
             {exercise.instructions?.map((step, idx) => (
               <Text key={idx} style={styles.instructionStep}>
