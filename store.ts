@@ -265,6 +265,62 @@ export const DEFAULT_TRAINING_DAYS: WorkoutDay[] = [
   { num: 4, title: 'Ноги / Икры', icon: '🦵' },
 ];
 
+const CATEGORY_ICONS: Record<string, string> = {
+  'грудь': '💪', 'бицепс': '💪', 'трицепс': '💪',
+  'спина': '🏋️‍♂️', 'плечи': '⚡', 'пресс': '🔥',
+  'ноги': '🦵', 'икры': '🦵',
+};
+
+// Название дня по группам мышц его упражнений: две самые частые, в порядке появления.
+export function deriveDayFromExercises(num: number, exercises: Exercise[]): WorkoutDay | null {
+  const counts = new Map<string, { count: number; first: number }>();
+  exercises
+    .filter((ex) => ex.day === num && ex.category?.trim())
+    .forEach((ex, i) => {
+      const key = ex.category.trim();
+      const entry = counts.get(key) ?? { count: 0, first: i };
+      entry.count += 1;
+      counts.set(key, entry);
+    });
+  if (counts.size === 0) return null;
+  const top = [...counts.entries()]
+    .sort((a, b) => b[1].count - a[1].count || a[1].first - b[1].first)
+    .slice(0, 2)
+    .sort((a, b) => a[1].first - b[1].first)
+    .map(([name]) => name);
+  return { num, title: top.join(' / '), icon: CATEGORY_ICONS[top[0].toLowerCase()] ?? '💪' };
+}
+
+function isDefaultDay(day: WorkoutDay) {
+  return DEFAULT_TRAINING_DAYS.some((d) => d.num === day.num && d.title === day.title);
+}
+
+// Дни, которых нет на сервере: берём свои названия с устройства, а стандартные заменяем названиями по упражнениям.
+function mergeDays(known: WorkoutDay[], local: WorkoutDay[], exercises: Exercise[]) {
+  const nums = new Set<number>([...known.map((d) => d.num), ...local.map((d) => d.num), ...exercises.map((ex) => ex.day)]);
+  const added: WorkoutDay[] = [];
+  const days = [...nums].sort((a, b) => a - b).map((num) => {
+    const fromServer = known.find((d) => d.num === num);
+    if (fromServer) return fromServer;
+    const fromDevice = local.find((d) => d.num === num);
+    const derived = deriveDayFromExercises(num, exercises);
+    const day = fromDevice && (!isDefaultDay(fromDevice) || !derived)
+      ? fromDevice
+      : derived ?? { num, title: `День ${num}`, icon: '💪' };
+    added.push(day);
+    return day;
+  });
+  return { days, added };
+}
+
+async function saveTrainingDays(userId: string, days: WorkoutDay[]) {
+  if (days.length === 0) return;
+  const { error } = await supabase
+    .from('training_days')
+    .upsert(days.map((d) => ({ user_id: userId, num: d.num, title: d.title, icon: d.icon })), { onConflict: 'user_id,num' });
+  if (error) console.warn('Не удалось сохранить дни тренировок:', error.message);
+}
+
 export interface WorkoutProgramDay {
   num: number;
   title: string;
@@ -308,6 +364,7 @@ interface WorkoutStore {
   addMeasurement: (weight: number, biceps?: number, chest?: number, waist?: number, hips?: number) => Promise<void>;
   deleteMeasurement: (id: string) => Promise<void>;
   syncData: () => Promise<void>;
+  syncTrainingDays: () => Promise<void>;
   clearUserData: () => void;
   startTimer: (seconds: number) => Promise<void>;
   stopTimer: () => Promise<void>;
@@ -583,6 +640,19 @@ export const useWorkoutStore = create<WorkoutStore>()(
       },
 
       // Синхронизация данных с бэкенда
+      // Дни тренировок хранятся на сервере, чтобы названия не терялись в установленном приложении и на других устройствах
+      syncTrainingDays: async () => {
+        const { user } = get();
+        if (!user) return;
+        const { data, error } = await supabase.from('training_days').select('num, title, icon').order('num');
+        const known: WorkoutDay[] = error || !data ? [] : data.map((d) => ({ num: Number(d.num), title: d.title, icon: d.icon }));
+        const { days, added } = mergeDays(known, get().trainingDays, get().exercises);
+        const currentDay = days.some((d) => d.num === get().currentDay) ? get().currentDay : days[0]?.num ?? 1;
+        set({ trainingDays: days, currentDay });
+        if (!error) await saveTrainingDays(user.id, added);
+        else console.warn('Таблица дней тренировок недоступна:', error.message);
+      },
+
       syncData: async () => {
         const { user } = get();
         if (!user) return;
@@ -631,6 +701,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
               }));
               set({ exercises: formatted });
             }
+            await get().syncTrainingDays();
           }
 
           // 2. Загружаем историю тренировок
@@ -862,6 +933,8 @@ export const useWorkoutStore = create<WorkoutStore>()(
             trainingDays: [...state.trainingDays, newDay]
           };
         });
+        const { user, trainingDays } = get();
+        if (user) await saveTrainingDays(user.id, trainingDays.slice(-1));
       },
       updateTrainingDay: async (num, title, icon) => {
         set((state) => ({
@@ -869,6 +942,8 @@ export const useWorkoutStore = create<WorkoutStore>()(
             d.num === num ? { ...d, title: title.trim(), icon: icon.trim() || '💪' } : d
           )
         }));
+        const { user, trainingDays } = get();
+        if (user) await saveTrainingDays(user.id, trainingDays.filter((d) => d.num === num));
       },
       deleteTrainingDay: async (num) => {
         const { user, exercises } = get();
@@ -893,6 +968,10 @@ export const useWorkoutStore = create<WorkoutStore>()(
             currentDay: nextActiveDay,
           };
         });
+        if (user) {
+          const { error } = await supabase.from('training_days').delete().eq('user_id', user.id).eq('num', num);
+          if (error) console.warn('Не удалось удалить день:', error.message);
+        }
       },
       swapTrainingDays: async (numA, numB) => {
         set((state) => {
@@ -918,8 +997,9 @@ export const useWorkoutStore = create<WorkoutStore>()(
           };
         });
 
-        const { user, exercises } = get();
+        const { user, exercises, trainingDays } = get();
         if (user) {
+          await saveTrainingDays(user.id, trainingDays.filter((d) => d.num === numA || d.num === numB));
           const exA = exercises.filter(ex => ex.day === numB);
           for (const ex of exA) {
             await supabase.from('exercises').update({ day: numB }).eq('id', ex.id);
@@ -959,6 +1039,8 @@ export const useWorkoutStore = create<WorkoutStore>()(
         if (user) {
           try {
              await supabase.from('exercises').delete().eq('user_id', user.id);
+             await supabase.from('training_days').delete().eq('user_id', user.id);
+             await saveTrainingDays(user.id, newTrainingDays);
              
              const inserts = newExercises.map(ex => ({
                id: ex.id,

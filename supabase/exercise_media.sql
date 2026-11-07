@@ -1,6 +1,9 @@
 -- Фото и видео техники упражнений. Выполнить один раз в Supabase → SQL Editor.
 -- Бакет закрытый: каждый пользователь видит и меняет только файлы в папке со своим id.
 
+-- Ссылка на фото/видео упражнения (обычный URL или storage:<путь в бакете>)
+alter table public.exercises add column if not exists image_url text;
+
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('exercise-media', 'exercise-media', false, 52428800, array['image/*', 'video/*'])
 on conflict (id) do update
