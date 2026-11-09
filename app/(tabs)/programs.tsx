@@ -12,8 +12,70 @@ import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { useWorkoutStore, WorkoutProgram } from '../../store';
 
+// Видео тренера лежат в общей папке хранилища, их видят все вошедшие пользователи
+const trainerVideo = (n: number) => `storage:shared/split-4/${n}.mp4`;
+
 // Предустановленные программы (хардкод для старта)
 const PROGRAMS: WorkoutProgram[] = [
+  {
+    id: 'split-4-video',
+    title: 'Сплит на 4 дня (с видео)',
+    description: 'Программа с видео тренера к каждому упражнению: техника в разделе «Техника» в карточке.',
+    days: [
+      {
+        num: 1,
+        title: 'Грудь / Бицепс',
+        icon: '💪',
+        exercises: [
+          { name: 'Жим лёжа в Смите', category: 'Грудь', instructions: [], imageUrl: trainerVideo(7503) },
+          { name: 'Жим в Смите на наклоне 45°', category: 'Верх груди', instructions: [], imageUrl: trainerVideo(7504) },
+          { name: 'Разводка «Бабочка»', category: 'Грудь', instructions: [], imageUrl: trainerVideo(7505) },
+          { name: 'Бицепс на скамье Скотта', category: 'Бицепс', instructions: [], imageUrl: trainerVideo(7506) },
+          { name: 'Сгибание рук с опорой на бедро', category: 'Бицепс', instructions: [], imageUrl: trainerVideo(7507) },
+          { name: 'Сгибание рук в кроссовере', category: 'Бицепс', instructions: [], imageUrl: trainerVideo(7508) },
+        ],
+      },
+      {
+        num: 2,
+        title: 'Ноги / Икры',
+        icon: '🦵',
+        exercises: [
+          { name: 'Присед в гакке', category: 'Ноги', instructions: [], imageUrl: trainerVideo(7509) },
+          { name: 'Выпады на месте', category: 'Ноги', instructions: [], imageUrl: trainerVideo(7510) },
+          { name: 'Разгибание голени сидя', category: 'Ноги', instructions: [], imageUrl: trainerVideo(7511) },
+          { name: 'Сгибание голени лёжа', category: 'Ноги', instructions: [], imageUrl: trainerVideo(7512) },
+          { name: 'Подъём на носок', category: 'Икры', instructions: [], imageUrl: trainerVideo(7513) },
+        ],
+      },
+      {
+        num: 3,
+        title: 'Спина / Трицепс',
+        icon: '🏋️‍♂️',
+        exercises: [
+          { name: 'Подтягивания', category: 'Спина', instructions: [], imageUrl: trainerVideo(7514) },
+          { name: 'Горизонтальная тяга треугольника', category: 'Спина', instructions: [], imageUrl: trainerVideo(7515) },
+          { name: 'Тяга гантели в наклоне одной рукой', category: 'Спина', instructions: [], imageUrl: trainerVideo(7516) },
+          { name: 'Пожимание плечами', category: 'Спина', instructions: [], imageUrl: trainerVideo(7517) },
+          { name: 'Брусья', category: 'Трицепс', instructions: [], imageUrl: trainerVideo(7518) },
+          { name: 'Отжимания Арнольда', category: 'Трицепс', instructions: [], imageUrl: trainerVideo(7519) },
+          { name: 'Трицепс в кроссовере', category: 'Трицепс', instructions: [], imageUrl: trainerVideo(7520) },
+        ],
+      },
+      {
+        num: 4,
+        title: 'Плечи / Пресс',
+        icon: '⚡',
+        exercises: [
+          { name: 'Жим сидя в Смите (скамья 15°)', category: 'Плечи', instructions: [], imageUrl: trainerVideo(7521) },
+          { name: 'Махи на среднюю дельту', category: 'Плечи', instructions: [], imageUrl: trainerVideo(7522) },
+          { name: 'Сгибание-разгибание рук в наклоне', category: 'Плечи', instructions: [], imageUrl: trainerVideo(7523) },
+          { name: 'Скручивания на коленях', category: 'Пресс', instructions: [], imageUrl: trainerVideo(7524) },
+          { name: 'Подъём таза в висе', category: 'Пресс', instructions: [], imageUrl: trainerVideo(7525) },
+          { name: 'Горизонтальные скручивания с весом', category: 'Пресс', instructions: [], imageUrl: trainerVideo(7526) },
+        ],
+      },
+    ],
+  },
   {
     id: 'p1',
     title: 'Full Body (3 дня)',

@@ -6,6 +6,7 @@ import { supabase } from '@/supabase';
 
 const BUCKET = 'exercise-media';
 const STORAGE_PREFIX = 'storage:';
+const SHARED_FOLDER = 'shared/';
 // Ограничение бесплатного тарифа Supabase на один файл
 export const MAX_MEDIA_BYTES = 50 * 1024 * 1024;
 const MAX_IMAGE_SIDE = 1600;
@@ -124,6 +125,8 @@ export async function uploadExerciseMedia(userId: string, file: File): Promise<s
 export async function deleteExerciseMedia(value?: string) {
   if (!value?.startsWith(STORAGE_PREFIX)) return;
   const path = value.slice(STORAGE_PREFIX.length);
+  // Общие видео из готовых программ нужны другим пользователям
+  if (path.startsWith(SHARED_FOLDER)) return;
   signedUrls.delete(path);
   const { error } = await supabase.storage.from(BUCKET).remove([path]);
   if (error) console.warn('Не удалось удалить файл упражнения:', error.message);

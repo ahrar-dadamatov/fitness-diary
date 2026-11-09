@@ -31,3 +31,10 @@ create policy "exercise media update own" on storage.objects
 create policy "exercise media delete own" on storage.objects
   for delete to authenticated
   using (bucket_id = 'exercise-media' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+-- Общие видео готовых программ (папка shared/) может смотреть любой вошедший пользователь.
+-- Загружать туда можно только через ключ service_role.
+drop policy if exists "exercise media read shared" on storage.objects;
+create policy "exercise media read shared" on storage.objects
+  for select to authenticated
+  using (bucket_id = 'exercise-media' and (storage.foldername(name))[1] = 'shared');
