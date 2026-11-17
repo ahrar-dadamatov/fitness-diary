@@ -380,8 +380,6 @@ interface WorkoutStore {
   deleteTrainingDay: (num: number) => Promise<void>;
   swapTrainingDays: (numA: number, numB: number) => Promise<void>;
   applyProgram: (program: WorkoutProgram) => Promise<void>;
-  geminiApiKey: string;
-  setGeminiApiKey: (key: string) => void;
   timerNotificationId: string | null;
   setTimerNotificationId: (id: string | null) => void;
   timerTargetTimestamp: number | null;
@@ -410,7 +408,6 @@ export const useWorkoutStore = create<WorkoutStore>()(
       foodLogs: [],
       workoutActive: false,
       workoutStartTime: null,
-      geminiApiKey: '',
       timerNotificationId: null,
       timerTargetTimestamp: null,
 
@@ -436,7 +433,6 @@ export const useWorkoutStore = create<WorkoutStore>()(
           foodLogs: [],
           workoutActive: false,
           workoutStartTime: null,
-          geminiApiKey: '',
           timerNotificationId: null,
           timerTargetTimestamp: null,
         });
@@ -1060,7 +1056,6 @@ export const useWorkoutStore = create<WorkoutStore>()(
           }
         }
       },
-      setGeminiApiKey: (key: string) => set({ geminiApiKey: key }),
       setTimerNotificationId: (id: string | null) => set({ timerNotificationId: id }),
     }),
     {
@@ -1077,7 +1072,6 @@ export const useWorkoutStore = create<WorkoutStore>()(
         foodLogs: state.foodLogs,
         workoutActive: state.workoutActive,
         workoutStartTime: state.workoutStartTime,
-        geminiApiKey: state.geminiApiKey,
         timerNotificationId: state.timerNotificationId,
         timerTargetTimestamp: state.timerTargetTimestamp,
       }),

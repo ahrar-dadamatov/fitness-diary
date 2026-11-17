@@ -2,5 +2,10 @@
   "buildCommand": "npm run build:web",
   "outputDirectory": "dist",
   "cleanUrls": true,
-  "framework": null
+  "framework": null,
+  "functions": {
+    "api/ai-coach.js": {
+      "maxDuration": 120
+    }
+  }
 }
