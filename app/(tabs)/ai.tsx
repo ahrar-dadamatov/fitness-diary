@@ -16,7 +16,6 @@ import { supabase } from '../../supabase';
 
 export default function AICoachScreen() {
   const history = useWorkoutStore((state) => state.history);
-  const exercises = useWorkoutStore((state) => state.exercises);
   const measurements = useWorkoutStore((state) => state.measurements);
   const foodLogs = useWorkoutStore((state) => state.foodLogs);
   const nutritionTarget = useWorkoutStore((state) => state.nutritionTarget);
@@ -41,7 +40,12 @@ export default function AICoachScreen() {
       const response = await fetch('/api/ai-coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ prompt: promptText }),
+        // Историю тренировок, замеры и питание сервер берёт из базы сам; цель по КБЖУ хранится только на телефоне
+        body: JSON.stringify({
+          prompt: promptText,
+          nutritionTarget,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }),
       });
       if (!response.ok) {
         const body = await response.json().catch(() => null);
@@ -72,25 +76,11 @@ export default function AICoachScreen() {
   };
 
   const handleWorkoutAnalysis = () => {
-    const recentLogs = [...history]
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 20);
-
-    if (recentLogs.length === 0) {
+    if (history.length === 0) {
       Alert.alert('Мало данных', 'Добавьте хотя бы несколько выполненных подходов в тренировках для анализа.');
       return;
     }
-
-    const logsSummary = recentLogs.map((log) => {
-      const ex = exercises.find((e) => e.id === log.exerciseId);
-      const name = ex ? ex.name : 'Упражнение';
-      const category = ex ? ex.category : 'Разное';
-      const date = new Date(log.date).toLocaleDateString('ru-RU');
-      return `- Дата: ${date}, Упражнение: "${name}" (${category}), Вес: ${log.weight} кг, Повторения: ${log.reps}`;
-    }).join('\n');
-
-    const prompt = `Проанализируй мои последние тренировки и дай рекомендации по прогрессу нагрузок:\n\n${logsSummary}`;
-    askCoach(prompt);
+    askCoach('Проанализируй мой прогресс в тренировках: в каких упражнениях я расту, где застрял, что давно не делал. Дай конкретные рекомендации по весам и повторам на следующие тренировки.');
   };
 
   const handleMeasurementsAnalysis = () => {
@@ -98,18 +88,7 @@ export default function AICoachScreen() {
       Alert.alert('Мало данных', 'Добавьте хотя бы один замер тела на вкладке «Замеры».');
       return;
     }
-
-    const sortedMeasures = [...measurements].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-
-    const measuresSummary = sortedMeasures.map((m) => {
-      const date = new Date(m.date).toLocaleDateString('ru-RU');
-      return `- Дата: ${date}, Вес: ${m.weight} кг, Бицепс: ${m.biceps || '-'} см, Грудь: ${m.chest || '-'} см, Талия: ${m.waist || '-'} см, Бедра: ${m.hips || '-'} см`;
-    }).join('\n');
-
-    const prompt = `Проанализируй динамику моих замеров тела. Дай советы по корректировке тренировок или питания в зависимости от прогресса:\n\n${measuresSummary}`;
-    askCoach(prompt);
+    askCoach('Проанализируй динамику моих замеров тела вместе с тренировками. Дай советы по корректировке тренировок или питания.');
   };
 
   const handleNutritionAnalysis = () => {
@@ -117,18 +96,7 @@ export default function AICoachScreen() {
       Alert.alert('Мало данных', 'Запишите съеденные продукты в Дневник Питания на вкладке «Замеры».');
       return;
     }
-
-    const foodsSummary = foodLogs.map((f) => {
-      const date = new Date(f.date).toLocaleDateString('ru-RU');
-      return `- Дата: ${date}, Продукт: "${f.name}", Калории: ${f.calories} ккал, Белки: ${f.proteins}г, Жиры: ${f.fats}г, Углеводы: ${f.carbs}г`;
-    }).join('\n');
-
-    const targetStr = nutritionTarget
-      ? `Моя цель по КБЖУ: Калории: ${nutritionTarget.calories} ккал, Белки: ${nutritionTarget.proteins}г, Жиры: ${nutritionTarget.fats}г, Углеводы: ${nutritionTarget.carbs}г`
-      : 'Моя цель по калориям не задана.';
-
-    const prompt = `Проанализируй мой рацион питания и сравни его с целями (если заданы). Оцени баланс макронутриентов и дай практические советы:\n\n${targetStr}\n\nМои логи питания:\n${foodsSummary}`;
-    askCoach(prompt);
+    askCoach('Проанализируй моё питание и сравни с целью по КБЖУ, если она задана. Оцени баланс белков, жиров и углеводов с учётом моих тренировок и дай практические советы.');
   };
 
   const handleCustomPrompt = () => {
